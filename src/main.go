@@ -21,5 +21,17 @@ func main() {
 
 	service.InitModels()
 
-	log.Println("success")
+	sandbox(config)
+}
+
+func sandbox(cfg config.Config) {
+	log.Println("Sandbox starting")
+
+	user := service.FindUserByEmailAddress("jaksonkallio@gmail.com")
+
+	log.Printf("%#v", user)
+
+	service.RefreshMarketData(cfg)
+
+	log.Println("Sandbox concluded")
 }

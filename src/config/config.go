@@ -7,7 +7,8 @@ import (
 )
 
 type Config struct {
-	Database Database `yaml:"database"`
+	Database   Database   `yaml:"database"`
+	MarketData MarketData `yaml:"market_data"`
 }
 
 type Database struct {
@@ -15,6 +16,11 @@ type Database struct {
 	Password string `yaml:"password"`
 	Host     string `yaml:"host"`
 	Name     string `yaml:"name"`
+}
+
+type MarketData struct {
+	ApiKey  string `yaml:"api_key"`
+	BaseUrl string `yaml:"base_url"`
 }
 
 func LoadConfig(path string) (Config, error) {

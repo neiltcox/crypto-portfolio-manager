@@ -9,14 +9,16 @@ import (
 type ExchangeIdentifier string
 
 const (
+	ExchangeIdentifierMocked      ExchangeIdentifier = "mock"
 	ExchangeIdentifierKraken      ExchangeIdentifier = "kraken"
 	ExchangeIdentifierCoinbasePro ExchangeIdentifier = "coinbasepro"
 	ExchangeIdentifierBinance     ExchangeIdentifier = "binance"
 )
 
-var exchanges map[ExchangeIdentifier]Exchange
+var exchanges map[ExchangeIdentifier]Exchange = make(map[ExchangeIdentifier]Exchange)
 
 func init() {
+	exchanges[ExchangeIdentifierMocked] = &ExchangeMocked{}
 	exchanges[ExchangeIdentifierKraken] = &ExchangeKraken{}
 }
 
@@ -43,31 +45,45 @@ func (exchangeConnection *ExchangeConnection) Exchange() (Exchange, error) {
 // An interface representing a generic exchange.
 type Exchange interface {
 	CreateOrder(*ExchangeConnection, string, float32) (CreatedOrder, error)
-	Holdings(*ExchangeConnection) (Holdings, error)
+	Holdings(*ExchangeConnection) ([]Holding, error)
 }
 
 type CreatedOrder struct {
 	OrderIdentifier string
 }
 
-type Holdings struct {
-	Holdings []Holding
-}
-
 type Holding struct {
-	Asset  string
-	Amount float32
+	Asset   string
+	Balance float32
 }
 
 type ExchangeKraken struct {
 }
 
-func (exchangeKraken *ExchangeKraken) CreateOrder(exchangeConnection *ExchangeConnection, asset string, amount float32) (CreatedOrder, error) {
-	// TODO: implement
-	return CreatedOrder{}, nil
+type ExchangeMocked struct {
 }
 
-func (exchangeKraken *ExchangeKraken) Holdings(exchangeConnection *ExchangeConnection) (Holdings, error) {
-	// TODO: implement
-	return Holdings{}, nil
+func (exchangeMocked *ExchangeMocked) CreateOrder(exchangeConnection *ExchangeConnection, asset string, amount float32) (CreatedOrder, error) {
+	return CreatedOrder{
+		OrderIdentifier: "123456",
+	}, nil
+}
+
+func (exchangeMocked *ExchangeMocked) Holdings(exchangeConnection *ExchangeConnection) ([]Holding, error) {
+	return []Holding{
+		{Asset: "BTC", Balance: 0.23},
+		{Asset: "ETH", Balance: 2.3},
+		{Asset: "XMR", Balance: 43.145},
+		{Asset: "ADA", Balance: 0.033},
+	}, nil
+}
+
+func (exchangeKraken *ExchangeKraken) CreateOrder(exchangeConnection *ExchangeConnection, asset string, amount float32) (CreatedOrder, error) {
+	return CreatedOrder{
+		OrderIdentifier: "123456",
+	}, nil
+}
+
+func (exchangeKraken *ExchangeKraken) Holdings(exchangeConnection *ExchangeConnection) ([]Holding, error) {
+	return []Holding{}, nil
 }
