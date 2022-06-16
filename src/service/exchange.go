@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 
+	"github.com/neiltcox/coinbake/database"
 	"gorm.io/gorm"
 )
 
@@ -23,7 +24,7 @@ func init() {
 }
 
 // Represents a configured connection to an exchange.
-type ExchangeConnection struct {
+type Portfolio struct {
 	gorm.Model
 	ApiKey    string
 	ApiSecret string
@@ -32,20 +33,18 @@ type ExchangeConnection struct {
 	User   User
 }
 
-// Gets the Exchange object for a given Exchange Connection, which is where the API call logic is.
-func (exchangeConnection *ExchangeConnection) Exchange() (Exchange, error) {
-	exchange, exists := exchanges[exchangeConnection.ExchangeIdentifier]
-	if !exists {
-		return nil, fmt.Errorf("exchange %q is not implemented", exchangeConnection.ExchangeIdentifier)
-	}
-
-	return exchange, nil
+type SupportedAsset struct {
+	Asset Asset
 }
 
 // An interface representing a generic exchange.
 type Exchange interface {
-	CreateOrder(*ExchangeConnection, string, float32) (CreatedOrder, error)
-	Holdings(*ExchangeConnection) ([]Holding, error)
+	CreateOrder(*Portfolio, string, float32) (CreatedOrder, error)
+	Holdings(*Portfolio) ([]Holding, error)
+	SupportedAssets(*Portfolio) (map[string]bool, error)
+}
+
+type MockSupportedAssets struct {
 }
 
 type CreatedOrder struct {
@@ -61,15 +60,45 @@ type ExchangeKraken struct {
 }
 
 type ExchangeMocked struct {
+	MockSupportedAssets
 }
 
-func (exchangeMocked *ExchangeMocked) CreateOrder(exchangeConnection *ExchangeConnection, asset string, amount float32) (CreatedOrder, error) {
+func (mockSupportedAssets *MockSupportedAssets) SupportedAssets(exchangeConnection *Portfolio) (map[string]bool, error) {
+	return map[string]bool{
+		"BTC": true,
+		"ETH": true,
+		"XMR": true,
+	}, nil
+}
+
+func (exchangeKraken *ExchangeKraken) SupportedAssets(exchangeConnection *Portfolio) (map[string]bool, error) {
+	// TODO: implement
+	return map[string]bool{}, nil
+}
+
+func FindPortfoliosByUserId(userId uint) []Portfolio {
+	portfolios := []Portfolio{}
+	database.Handle().Where("user_id = ?", userId).Find(&portfolios)
+	return portfolios
+}
+
+// Gets the Exchange object for a given Exchange Connection, which is where the API call logic is.
+func (exchangeConnection *Portfolio) Exchange() (Exchange, error) {
+	exchange, exists := exchanges[exchangeConnection.ExchangeIdentifier]
+	if !exists {
+		return nil, fmt.Errorf("exchange %q is not implemented", exchangeConnection.ExchangeIdentifier)
+	}
+
+	return exchange, nil
+}
+
+func (exchangeMocked *ExchangeMocked) CreateOrder(exchangeConnection *Portfolio, asset string, amount float32) (CreatedOrder, error) {
 	return CreatedOrder{
 		OrderIdentifier: "123456",
 	}, nil
 }
 
-func (exchangeMocked *ExchangeMocked) Holdings(exchangeConnection *ExchangeConnection) ([]Holding, error) {
+func (exchangeMocked *ExchangeMocked) Holdings(exchangeConnection *Portfolio) ([]Holding, error) {
 	return []Holding{
 		{Asset: "BTC", Balance: 0.23},
 		{Asset: "ETH", Balance: 2.3},
@@ -78,12 +107,12 @@ func (exchangeMocked *ExchangeMocked) Holdings(exchangeConnection *ExchangeConne
 	}, nil
 }
 
-func (exchangeKraken *ExchangeKraken) CreateOrder(exchangeConnection *ExchangeConnection, asset string, amount float32) (CreatedOrder, error) {
+func (exchangeKraken *ExchangeKraken) CreateOrder(exchangeConnection *Portfolio, asset string, amount float32) (CreatedOrder, error) {
 	return CreatedOrder{
 		OrderIdentifier: "123456",
 	}, nil
 }
 
-func (exchangeKraken *ExchangeKraken) Holdings(exchangeConnection *ExchangeConnection) ([]Holding, error) {
+func (exchangeKraken *ExchangeKraken) Holdings(exchangeConnection *Portfolio) ([]Holding, error) {
 	return []Holding{}, nil
 }

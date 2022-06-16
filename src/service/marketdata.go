@@ -7,20 +7,11 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"time"
 
-	"github.com/jaksonkallio/coinbake/config"
+	"github.com/neiltcox/coinbake/config"
+	"github.com/neiltcox/coinbake/database"
 )
-
-type Asset struct {
-	Symbol    string
-	MarketCap uint64
-	Volume    uint64
-
-	// An approximate price used for informational purposes only.
-	// Do NOT use for creating Schedules.
-	// Could also be used to sanity-check exchange prices of assets.
-	ApproxPrice float64
-}
 
 type ListingsResponse struct {
 	Listings []Listing `json:"data"`
@@ -42,13 +33,21 @@ type Quote struct {
 	MarketCap float64 `json:"market_cap"`
 }
 
-var assets map[string]*Asset = make(map[string]*Asset)
+const (
+	CaptureTopAssetCount int = 100
+)
+
+var marketDataInitialRefresh bool = false
+
+func MarketDataInitialRefresh() bool {
+	return marketDataInitialRefresh
+}
 
 // Refreshes all market data.
 func RefreshMarketData(cfg config.Config) {
 	responseBytes, err := marketDataApi(cfg, "cryptocurrency/listings/latest", url.Values{
 		"start":   []string{"1"},
-		"limit":   []string{"500"},
+		"limit":   []string{fmt.Sprintf("%d", CaptureTopAssetCount)},
 		"convert": []string{"USD"},
 	})
 	if err != nil {
@@ -59,21 +58,15 @@ func RefreshMarketData(cfg config.Config) {
 	json.Unmarshal(responseBytes, &listingsResponse)
 
 	for _, listing := range listingsResponse.Listings {
-		asset, exists := assets[listing.Symbol]
-		if !exists {
-			asset = &Asset{}
-			assets[listing.Symbol] = asset
-		}
-
-		asset.Symbol = listing.Symbol
+		asset := FindAssetBySymbol(listing.Symbol)
 		asset.MarketCap = uint64(listing.Quotes.USD.MarketCap)
 		asset.Volume = uint64(listing.Quotes.USD.Volume)
 		asset.ApproxPrice = listing.Quotes.USD.Price
+		asset.LastRefreshed = time.Now()
+		database.Handle().Save(asset)
 	}
 
-	for _, asset := range assets {
-		log.Printf("symbol: %s", asset.Symbol)
-	}
+	marketDataInitialRefresh = true
 }
 
 func marketDataApi(cfg config.Config, endpoint string, query url.Values) ([]byte, error) {

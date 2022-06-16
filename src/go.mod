@@ -1,4 +1,4 @@
-module github.com/jaksonkallio/coinbake
+module github.com/neiltcox/coinbake
 
 go 1.18
 

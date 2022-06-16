@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/jaksonkallio/coinbake/database"
+	"github.com/neiltcox/coinbake/database"
 	"gorm.io/gorm"
 )
 

@@ -3,7 +3,7 @@ package service
 import (
 	"log"
 
-	"github.com/jaksonkallio/coinbake/database"
+	"github.com/neiltcox/coinbake/database"
 )
 
 func InitModels() {
@@ -12,5 +12,6 @@ func InitModels() {
 	database.Handle().AutoMigrate(
 		&User{},
 		&Strategy{},
+		&Portfolio{},
 	)
 }
