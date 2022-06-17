@@ -13,5 +13,6 @@ func InitModels() {
 		&User{},
 		&Strategy{},
 		&Portfolio{},
+		&Asset{},
 	)
 }

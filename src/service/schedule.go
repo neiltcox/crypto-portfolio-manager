@@ -8,7 +8,7 @@ type Schedule struct {
 
 type ScheduleItem struct {
 	// Asset ticker affected.
-	Asset *Asset
+	Asset Asset
 
 	// The amount of the asset should change.
 	// Positive = buy, negative = sell.

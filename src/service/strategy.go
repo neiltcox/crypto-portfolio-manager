@@ -41,31 +41,101 @@ type Strategy struct {
 	Portfolio   Portfolio
 }
 
+// A single line item in the strategy calculation.
+type RebalanceMovement struct {
+	Asset   Asset
+	Balance float64
+	// The absolute weight value given to this line item.
+	WeightValue float64
+	// The target weight proportion that this line item should have.
+	WeightProportion float64
+	TargetValuation  float64
+	ValuationDiff    float64
+}
+
+type RebalanceMovementSummary struct {
+	Movements         []*RebalanceMovement
+	UnsupportedAssets []Asset
+}
+
 // Only submit orders with a change in amount of at least this much.
 // For example, if an asset balance should change by less than epsilon value 0.001 (0.1%), simply ignore it.
-const DustEpsilonRate float64 = 0.0001
-const MaxStrategyAssetCount int = 100
+const DustEpsilonRate float64 = 0.001
+
+// Maximum number of assets that can be included in a strategy.
+const MaxStrategyAssetCount int = 500
+
+func (rebalanceMovement *RebalanceMovement) Valuation() float64 {
+	return rebalanceMovement.Balance * rebalanceMovement.Asset.ApproxPrice
+}
 
 // Generates a schedule utilizing this strategy and the user's current holdings.
-func (strategy *Strategy) GenerateSchedule(portfolio *Portfolio) (Schedule, error) {
+func (strategy *Strategy) RebalanceMovements(portfolio *Portfolio) (RebalanceMovementSummary, error) {
 	exchange, err := portfolio.Exchange()
 	if err != nil {
-		return Schedule{}, fmt.Errorf("could not get exchange from exchange connection: %s", err)
+		return RebalanceMovementSummary{}, fmt.Errorf("could not get exchange from exchange connection: %s", err)
 	}
 
+	// Get the assets we should do calculations with.
+	// Also, get the unsupported assets list so that we can communicate to the user that these assets could not be included.
+	assets, unsupportedAssets, err := strategy.considerableAssets(exchange, portfolio)
+	if err != nil {
+		return RebalanceMovementSummary{}, err
+	}
+
+	// Get the map of asset symbol -> holding.
 	holdings, err := exchange.Holdings(portfolio)
 	if err != nil {
-		return Schedule{}, fmt.Errorf("could not fetch holdings: %s", err)
+		return RebalanceMovementSummary{}, fmt.Errorf("could not fetch holdings: %s", err)
 	}
 
-	supportedAssets, err := exchange.SupportedAssets(portfolio)
-	if err != nil {
-		return Schedule{}, fmt.Errorf("could not get supported exchange assets: %s", err)
+	// Prepare our calculation line items
+	rebalanceMovements := make([]*RebalanceMovement, 0)
+
+	for _, asset := range assets {
+		// Find the balance, defaulting to zero if there is no balance.
+		balance := 0.0
+		holding, isHeld := holdings[asset.Symbol]
+		if isHeld {
+			balance = holding.Balance
+		}
+
+		rebalanceMovements = append(
+			rebalanceMovements,
+			&RebalanceMovement{
+				Asset:       asset,
+				Balance:     balance,
+				WeightValue: calculateWeight(asset, strategy.WeightingMetric, strategy.WeightingModifier),
+			},
+		)
 	}
 
-	// Which assets to use
+	// Find our totals for the calc lines
+	var totalWeight float64
+	var totalValuation float64
+	for _, rebalanceMovement := range rebalanceMovements {
+		totalWeight += rebalanceMovement.WeightValue
+		totalValuation += rebalanceMovement.Valuation()
+	}
+
+	for _, rebalanceMovement := range rebalanceMovements {
+		rebalanceMovement.WeightProportion = rebalanceMovement.WeightValue / totalWeight
+		rebalanceMovement.TargetValuation = rebalanceMovement.WeightProportion * totalValuation
+		rebalanceMovement.ValuationDiff = rebalanceMovement.TargetValuation - rebalanceMovement.Valuation()
+	}
+
+	return RebalanceMovementSummary{
+		Movements:         rebalanceMovements,
+		UnsupportedAssets: unsupportedAssets,
+	}, nil
+}
+
+// Which assets should be considered for calculations for a given strategy.
+// Filters out assets unsupported by the exchange.
+// First return are considerable assets, second return are unsupported assets.
+func (strategy *Strategy) considerableAssets(exchange Exchange, portfolio *Portfolio) ([]Asset, []Asset, error) {
+	// Which assets to choose from.
 	var eligibleAssets []Asset
-	assets := make([]Asset, 0)
 
 	// Respect our maximum strategy asset count
 	assetCount := strategy.TopAssetCount
@@ -80,68 +150,61 @@ func (strategy *Strategy) GenerateSchedule(portfolio *Portfolio) (Schedule, erro
 		} else if strategy.WeightingMetric == WeightingMetricVolume {
 			eligibleAssets = FindAssetsByVolume(assetCount)
 		} else {
-			return Schedule{}, fmt.Errorf("weighting metric %q not yet implemented", strategy.WeightingMetric)
+			return nil, nil, fmt.Errorf("weighting metric %q not yet implemented", strategy.WeightingMetric)
 		}
 	} else {
-		return Schedule{}, fmt.Errorf("asset selection method not yet implemented")
+		return nil, nil, fmt.Errorf("asset selection method not yet implemented")
 	}
 
-	// At this point we have a sorted list of assets that should be included.
-
-	// Prepare the resulting schedule struct.
-	schedule := Schedule{
-		Items:             make([]ScheduleItem, 0),
-		UnsupportedAssets: make([]Asset, 0),
-	}
+	// Initialize our resulting asset lists.
+	considerableAssets := make([]Asset, 0)
+	unsupportedAssets := make([]Asset, 0)
 
 	// Build the list of unsupported assets.
 	// We must remove the unsupported assets from the weight calculations.
 	// This is because an unsupported asset should not effectively take up any weight.
 	for _, asset := range eligibleAssets {
-		supported, exists := supportedAssets[asset.Symbol]
-		if !exists || !supported {
+		if exchange.SupportsAsset(portfolio, asset) {
+			// Add the eligible asset to the list of assets that we'll include in the calculations.
+			considerableAssets = append(considerableAssets, asset)
+		} else {
 			// Not a supported asset.
 			// Add the asset to the schedule's list of unsupported assets.
-			schedule.UnsupportedAssets = append(schedule.UnsupportedAssets, asset)
-		} else {
-			// Add the eligible asset to the list of assets that we'll include in the calculations.
-			assets = append(assets, asset)
+			unsupportedAssets = append(unsupportedAssets, asset)
 		}
 	}
 
-	// Total weight of the metric we're weighing by.
-	var totalWeight uint64
-	for _, asset := range assets {
-		var weight uint64
-
-		switch strategy.WeightingMetric {
-		case WeightingMetricMarketCap:
-			weight = asset.MarketCap
-		case WeightingMetricVolume:
-			weight = asset.Volume
-		}
-
-		totalWeight += weightAfterModifier(weight, strategy.WeightingModifier)
-	}
-
-	return schedule, nil
+	return considerableAssets, unsupportedAssets, nil
 }
 
-func weightAfterModifier(weight uint64, modifier WeightingModifier) uint64 {
+func calculateWeight(asset Asset, metric WeightingMetric, modifier WeightingModifier) float64 {
+	var weight float64
+
+	// Figure the weight value based on the metric.
+	// Dividing by 1,000 because weights should be expressed in thousands of dollars.
+	switch metric {
+	case WeightingMetricMarketCap:
+		//weight = float64(asset.MarketCap) / 1000.0
+		weight = float64(asset.MarketCap)
+	case WeightingMetricVolume:
+		//weight = float64(asset.Volume) / 1000.0
+		weight = float64(asset.Volume)
+	}
+
 	switch modifier {
 	case WeightingModifierNone:
 		return weight
 	case WeightingModifierSquareRoot:
-		return uint64(math.Pow(float64(weight), 0.5))
+		return math.Pow(weight, 0.5)
 	case WeightingModifierCubeRoot:
-		return uint64(math.Pow(float64(weight), 0.33333))
+		return math.Pow(weight, 0.33333)
 	default:
 		return 1
 	}
 }
 
-func FindStrategyByExchangeConnectionId(exchangeConnectionId uint) *Strategy {
+func FindStrategyByPortfolioId(exchangeConnectionId uint) *Strategy {
 	strategy := Strategy{}
-	database.Handle().Where("exchange_connection_id = ?", exchangeConnectionId).First(&strategy)
+	database.Handle().Where("portfolio_id = ?", exchangeConnectionId).First(&strategy)
 	return &strategy
 }

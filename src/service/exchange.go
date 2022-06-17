@@ -40,8 +40,9 @@ type SupportedAsset struct {
 // An interface representing a generic exchange.
 type Exchange interface {
 	CreateOrder(*Portfolio, string, float32) (CreatedOrder, error)
-	Holdings(*Portfolio) ([]Holding, error)
+	Holdings(*Portfolio) (map[string]Holding, error)
 	SupportedAssets(*Portfolio) (map[string]bool, error)
+	SupportsAsset(*Portfolio, Asset) bool
 }
 
 type MockSupportedAssets struct {
@@ -52,8 +53,8 @@ type CreatedOrder struct {
 }
 
 type Holding struct {
-	Asset   string
-	Balance float32
+	Asset   Asset
+	Balance float64
 }
 
 type ExchangeKraken struct {
@@ -98,13 +99,17 @@ func (exchangeMocked *ExchangeMocked) CreateOrder(exchangeConnection *Portfolio,
 	}, nil
 }
 
-func (exchangeMocked *ExchangeMocked) Holdings(exchangeConnection *Portfolio) ([]Holding, error) {
-	return []Holding{
-		{Asset: "BTC", Balance: 0.23},
-		{Asset: "ETH", Balance: 2.3},
-		{Asset: "XMR", Balance: 43.145},
-		{Asset: "ADA", Balance: 0.033},
+func (exchangeMocked *ExchangeMocked) Holdings(exchangeConnection *Portfolio) (map[string]Holding, error) {
+	return map[string]Holding{
+		"BTC": {Asset: FindAssetBySymbol("BTC"), Balance: 0.23},
+		"ETH": {Asset: FindAssetBySymbol("ETH"), Balance: 2.3},
+		"XMR": {Asset: FindAssetBySymbol("XMR"), Balance: 43.145},
+		"BNB": {Asset: FindAssetBySymbol("BNB"), Balance: 0.033},
 	}, nil
+}
+
+func (exchangeMocked *ExchangeMocked) SupportsAsset(exchangeConnection *Portfolio, asset Asset) bool {
+	return true
 }
 
 func (exchangeKraken *ExchangeKraken) CreateOrder(exchangeConnection *Portfolio, asset string, amount float32) (CreatedOrder, error) {
@@ -113,6 +118,10 @@ func (exchangeKraken *ExchangeKraken) CreateOrder(exchangeConnection *Portfolio,
 	}, nil
 }
 
-func (exchangeKraken *ExchangeKraken) Holdings(exchangeConnection *Portfolio) ([]Holding, error) {
-	return []Holding{}, nil
+func (exchangeKraken *ExchangeKraken) Holdings(exchangeConnection *Portfolio) (map[string]Holding, error) {
+	return map[string]Holding{}, nil
+}
+
+func (exchangeKraken *ExchangeKraken) SupportsAsset(exchangeConnection *Portfolio, asset Asset) bool {
+	return true
 }

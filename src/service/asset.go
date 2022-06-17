@@ -12,6 +12,10 @@ import (
 // Protects against a bad API call, or an exchange pricing bug.
 const AssetPriceSanityCheckDiff float32 = 0.05
 
+// TODO: shorten to something like 2 min in production.
+// How long the market data lasts for an asset.
+const AssetMarketDataExpiry time.Duration = 15 * time.Minute
+
 type Asset struct {
 	gorm.Model
 	Symbol    string
@@ -42,20 +46,21 @@ func FindAssetsByVolume(limit int) []Asset {
 func FindAssetBySymbol(symbol string) Asset {
 	symbol = strings.ToUpper(symbol)
 
-	asset := Asset{}
-	findTx := database.Handle().Where("symbol = ?", symbol).First(&asset)
+	assetsWithSymbol := []Asset{}
+	database.Handle().Where("symbol = ?", symbol).Find(&assetsWithSymbol)
 
-	var assetsFoundBySymbol int64 = 0
-	findTx.Count(&assetsFoundBySymbol)
-
-	if assetsFoundBySymbol > 0 {
-		return asset
+	if len(assetsWithSymbol) > 0 {
+		return assetsWithSymbol[0]
 	}
 
-	asset = Asset{
+	asset := Asset{
 		Symbol: symbol,
 	}
 	database.Handle().Create(&asset)
 
 	return asset
+}
+
+func (asset *Asset) FreshMarketData() bool {
+	return time.Since(asset.LastRefreshed) < AssetMarketDataExpiry
 }

@@ -24,31 +24,37 @@ func main() {
 	sandbox(config)
 }
 
+// TODO: remove all of this junk
 func sandbox(cfg config.Config) {
 	log.Println("Sandbox starting")
 
-	user := service.FindUserByEmailAddress("neiltcox@gmail.com")
+	user := service.FindUserByEmailAddress("jaksonkallio@gmail.com")
 
 	//log.Printf("%#v", user)
 
 	//service.RefreshMarketData(cfg)
 
-	exchangeConnections := service.FindPortfoliosByUserId(user.ID)
-	for _, exchangeConnection := range exchangeConnections {
-		log.Printf("exchange conection: %d", exchangeConnection.ID)
-		strategy := service.FindStrategyByExchangeConnectionId(exchangeConnection.ID)
+	portfolios := service.FindPortfoliosByUserId(user.ID)
+	for _, portfolio := range portfolios {
+		log.Printf("exchange conection: %d", portfolio.ID)
+		strategy := service.FindStrategyByPortfolioId(portfolio.ID)
 		if strategy == nil {
 			log.Printf("strategy is nil")
 			continue
 		}
 
-		schedule, err := strategy.GenerateSchedule(&exchangeConnection)
+		rebalanceMovements, err := strategy.RebalanceMovements(&portfolio)
 		if err != nil {
-			log.Printf("Could not generate schedule: %s", err)
+			log.Printf("Could not generate rebalance movements: %s", err)
 		}
 
-		for _, scheduleItem := range schedule.Items {
-			log.Printf("%s -> %f", scheduleItem.Asset.Symbol, scheduleItem.Amount)
+		for _, rebalanceMovement := range rebalanceMovements.Movements {
+			log.Printf(
+				"%s tgwt: %f diff: %f",
+				rebalanceMovement.Asset.Symbol,
+				rebalanceMovement.WeightProportion,
+				rebalanceMovement.ValuationDiff,
+			)
 		}
 	}
 
