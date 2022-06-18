@@ -69,6 +69,14 @@ func (rebalanceMovement *RebalanceMovement) Valuation() float64 {
 	return rebalanceMovement.Balance * rebalanceMovement.Asset.ApproxPrice
 }
 
+func (rebalanceMovement *RebalanceMovement) BalanceDiff() float64 {
+	if rebalanceMovement.Asset.ApproxPrice <= 0 {
+		return 0
+	}
+
+	return rebalanceMovement.ValuationDiff / rebalanceMovement.Asset.ApproxPrice
+}
+
 // Generates a schedule utilizing this strategy and the user's current holdings.
 func (strategy *Strategy) RebalanceMovements(portfolio *Portfolio) (RebalanceMovementSummary, error) {
 	exchange, err := portfolio.Exchange()
@@ -110,6 +118,35 @@ func (strategy *Strategy) RebalanceMovements(portfolio *Portfolio) (RebalanceMov
 		)
 	}
 
+	// TODO: this is horribly inefficient, O(n^2)... seriously im embarrassed by my laziness to write something else rn
+	// Add all remaining holdings the user has (that aren't captured in the asset list) as weight value = 0.
+	// This will surely trigger these assets to be sold.
+	holdingRemovals := make([]*RebalanceMovement, 0)
+	for _, holding := range holdings {
+		found := false
+
+		for _, rebalanceMovement := range rebalanceMovements {
+			if rebalanceMovement.Asset.Symbol == holding.Asset.Symbol {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			holdingRemovals = append(
+				holdingRemovals,
+				&RebalanceMovement{
+					Asset:       holding.Asset,
+					Balance:     holding.Balance,
+					WeightValue: 0,
+				},
+			)
+		}
+	}
+
+	// Add all of the removals to the rebalance movements
+	rebalanceMovements = append(rebalanceMovements, holdingRemovals...)
+
 	// Find our totals for the calc lines
 	var totalWeight float64
 	var totalValuation float64
@@ -119,7 +156,12 @@ func (strategy *Strategy) RebalanceMovements(portfolio *Portfolio) (RebalanceMov
 	}
 
 	for _, rebalanceMovement := range rebalanceMovements {
-		rebalanceMovement.WeightProportion = rebalanceMovement.WeightValue / totalWeight
+		if totalWeight > 0 {
+			rebalanceMovement.WeightProportion = rebalanceMovement.WeightValue / totalWeight
+		} else {
+			rebalanceMovement.WeightProportion = 0
+		}
+
 		rebalanceMovement.TargetValuation = rebalanceMovement.WeightProportion * totalValuation
 		rebalanceMovement.ValuationDiff = rebalanceMovement.TargetValuation - rebalanceMovement.Valuation()
 	}

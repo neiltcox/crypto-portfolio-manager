@@ -50,10 +50,11 @@ func sandbox(cfg config.Config) {
 
 		for _, rebalanceMovement := range rebalanceMovements.Movements {
 			log.Printf(
-				"%s tgwt: %f diff: %f",
+				"%s tgwt: %f vldf: %f atdf: %f",
 				rebalanceMovement.Asset.Symbol,
 				rebalanceMovement.WeightProportion,
 				rebalanceMovement.ValuationDiff,
+				rebalanceMovement.BalanceDiff(),
 			)
 		}
 	}

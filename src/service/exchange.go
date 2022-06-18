@@ -105,6 +105,7 @@ func (exchangeMocked *ExchangeMocked) Holdings(exchangeConnection *Portfolio) (m
 		"ETH": {Asset: FindAssetBySymbol("ETH"), Balance: 2.3},
 		"XMR": {Asset: FindAssetBySymbol("XMR"), Balance: 43.145},
 		"BNB": {Asset: FindAssetBySymbol("BNB"), Balance: 0.033},
+		"ADA": {Asset: FindAssetBySymbol("ADA"), Balance: 50.2},
 	}, nil
 }
 
