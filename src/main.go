@@ -22,6 +22,10 @@ func main() {
 	service.InitModels()
 
 	sandbox(config)
+
+	service.Serve()
+
+	log.Println("Fully stopped.")
 }
 
 // TODO: remove all of this junk
