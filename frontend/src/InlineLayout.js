@@ -8,6 +8,10 @@ export default function InlineLayout(props){
 		classes.push('align_'+props.align);
 	}
 
+	if(['shim', 'minor', 'major'].includes(props.gap_size)){
+		classes.push('gap_size_'+props.gap_size);
+	}
+
 	return (
 		<div className={classes.join(' ')}>
 			{

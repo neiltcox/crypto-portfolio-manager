@@ -9,7 +9,6 @@ export default function App(props) {
 	return (
 		<AuthUserContext.Provider>
 			<FixedWidth width='medium'>
-				<Nav/>
 				<Router/>
 			</FixedWidth>
 		</AuthUserContext.Provider>

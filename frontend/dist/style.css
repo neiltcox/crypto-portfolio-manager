@@ -55,19 +55,20 @@ textarea,
 	top: 0;
 	left: 0;
 	width: 100%;
+	margin-bottom: 20px;
 	user-select: none;
 }
 .nav .logo {
-	height: 30px;
+	height: 40px;
 	font-weight: bold;
 	font-size: 1.2em;
-	padding-right: 10px;
 	color: #9381ff;
+	line-height: 40px;
+	margin-right: 40px;
 }
 .nav .links {
 	display: flex;
 	flex-direction: row;
-	font-size: 1em;
 	gap: 5px;
 	align-items: center
 }
@@ -77,8 +78,27 @@ textarea,
 	padding: 0px 10px;
 	transition: all 100ms;
 }
+.nav .links a .icon {
+	display: inline-block;
+	margin-right: 5px;
+	font-size: 1.1em;
+}
 .nav .links a.active {
-	color: #e74c3c;
+	color: #9381ff;
+}
+
+
+/* -- Connection Status -- */
+.connection_status_indicator {
+	height: 8px;
+	width: 8px;
+	border-radius: 50%;
+}
+.connection_status_indicator[data-sentiment='positive'] {
+	background-color: #2a9d8f;
+}
+.connection_status_indicator[data-sentiment='negative'] {
+	background-color: #d62828;
 }
 
 
@@ -96,9 +116,7 @@ textarea,
 	white-space: pre-wrap;
 	word-wrap: break-word;
 	word-break: break-all;
-}
-.text.standard {
-	line-height: 30px;
+	line-height: 1.5em;
 }
 .text.heading {
 	font-weight: bold;
@@ -113,6 +131,12 @@ textarea,
 }
 .text.paragraph {
 	line-height: 1.5em;
+}
+.text.sentiment_positive {
+	color: #2a9d8f;
+}
+.text.sentiment_negative {
+	color: #d62828;
 }
 
 /* -- Stack -- */
@@ -262,6 +286,9 @@ textarea,
 	flex-direction: row;
 	gap: 10px;
 	align-items: center;
+}
+.inline_layout.gap_size_shim {
+	gap: 5px;
 }
 .inline_layout.align_center {
 	justify-content: center;

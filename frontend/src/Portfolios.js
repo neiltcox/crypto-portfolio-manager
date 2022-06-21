@@ -12,18 +12,19 @@ export default function Portfolios(props){
 			name: "Long Term Index",
 			exchange: "coinbasepro",
 			valuation: 10230.83,
+			connected: true,
 		},
 		{
 			id: 2,
 			name: "Speculative",
 			exchange: "kraken",
 			valuation: 6739.20,
+			connected: false,
 		}
 	];
 
 	return (
 		<Stack>
-			<StyledText styling='heading'>Portfolios</StyledText>
 			<InlineLayout>
 				{
 					portfolios.map(

@@ -32,6 +32,10 @@ export default function StyledText(props) {
 	if(['center'].includes(props.align)){
 		classes.push('align_'+props.align);
 	}
+
+	if(['positive', 'negative'].includes(props.sentiment)){
+		classes.push('sentiment_'+props.sentiment);
+	}
 	
 	return (
 		<div className={classes.join(' ')} style={customStyling}>
