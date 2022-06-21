@@ -21,6 +21,7 @@ func Serve() {
 	apiV1.GET("/strategy", GetStrategy())
 	apiV1.POST("/strategy", PostStrategy())
 	apiV1.GET("/portfolio", GetPortfolio())
+	apiV1.GET("/portfolios", GetPortfolios())
 	apiV1.POST("/portfolio", PostPortfolio())
 	apiV1.GET("/user", GetUser())
 

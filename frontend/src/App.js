@@ -7,7 +7,7 @@ import AuthUserContext from './AuthUserContext';
 
 export default function App(props) {
 	return (
-		<AuthUserContext.Provider>
+		<AuthUserContext.Provider value={{user: {}, authenticated: false}}>
 			<FixedWidth width='medium'>
 				<Router/>
 			</FixedWidth>

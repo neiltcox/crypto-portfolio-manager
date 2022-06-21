@@ -27,6 +27,20 @@ func GetPortfolio() gin.HandlerFunc {
 	}
 }
 
+func GetPortfolios() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		authUserId := DistillAuthUserId(ctx)
+		portfolios := FindPortfoliosByUserId(authUserId)
+
+		buildStandardResponse(
+			ctx,
+			gin.H{
+				"Portfolios": portfolios,
+			},
+		)
+	}
+}
+
 func PostPortfolio() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// TODO: implement
@@ -39,4 +53,8 @@ func GetUser() gin.HandlerFunc {
 		// TODO: implement
 		ctx.Status(http.StatusNotImplemented)
 	}
+}
+
+func buildStandardResponse(ctx *gin.Context, data interface{}) {
+	ctx.JSON(http.StatusOK, data)
 }

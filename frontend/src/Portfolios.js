@@ -1,27 +1,28 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import PortfolioTile from "./PortfolioTile";
 import StyledText from "./StyledText";
 import Stack from "./Stack";
 import InlineLayout from "./InlineLayout";
-
+import contactEndpoint from './contactEndpoint';
 
 export default function Portfolios(props){
-	let portfolios = [
-		{
-			id: 1,
-			name: "Long Term Index",
-			exchange: "coinbasepro",
-			valuation: 10230.83,
-			connected: true,
-		},
-		{
-			id: 2,
-			name: "Speculative",
-			exchange: "kraken",
-			valuation: 6739.20,
-			connected: false,
+	const [portfolios, setPortfolios] = useState([]);
+
+	async function loadPortfolios(){
+		try {
+			let data = await contactEndpoint('GET', 'portfolios');
+			setPortfolios(data.Portfolios);
+		}catch(e){
+			console.log("could not load portfolios: "+e);
 		}
-	];
+	}
+
+	useEffect(
+		() => {
+			loadPortfolios();
+		},
+		[]
+	);
 
 	return (
 		<Stack>

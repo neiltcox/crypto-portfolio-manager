@@ -2,9 +2,6 @@ package service
 
 import (
 	"fmt"
-
-	"github.com/neiltcox/coinbake/database"
-	"gorm.io/gorm"
 )
 
 type ExchangeIdentifier string
@@ -21,16 +18,6 @@ var exchanges map[ExchangeIdentifier]Exchange = make(map[ExchangeIdentifier]Exch
 func init() {
 	exchanges[ExchangeIdentifierMocked] = &ExchangeMocked{}
 	exchanges[ExchangeIdentifierKraken] = &ExchangeKraken{}
-}
-
-// Represents a configured connection to an exchange.
-type Portfolio struct {
-	gorm.Model
-	ApiKey    string
-	ApiSecret string
-	ExchangeIdentifier
-	UserID int
-	User   User
 }
 
 type SupportedAsset struct {
@@ -75,12 +62,6 @@ func (mockSupportedAssets *MockSupportedAssets) SupportedAssets(exchangeConnecti
 func (exchangeKraken *ExchangeKraken) SupportedAssets(exchangeConnection *Portfolio) (map[string]bool, error) {
 	// TODO: implement
 	return map[string]bool{}, nil
-}
-
-func FindPortfoliosByUserId(userId uint) []Portfolio {
-	portfolios := []Portfolio{}
-	database.Handle().Where("user_id = ?", userId).Find(&portfolios)
-	return portfolios
 }
 
 // Gets the Exchange object for a given Exchange Connection, which is where the API call logic is.
