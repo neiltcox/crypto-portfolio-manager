@@ -9,6 +9,12 @@ import (
 func Serve() {
 	router := gin.Default()
 
+	// All static files are accessible at `/static`
+	router.Static("/static", "../frontend/dist/")
+
+	// The index file is accessible at the root
+	router.StaticFile("/", "../frontend/dist/index.html")
+
 	apiV1 := router.Group("/api/v1")
 	apiV1.Use(Authenticate())
 
