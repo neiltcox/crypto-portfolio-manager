@@ -2,6 +2,7 @@ package service
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,8 +23,28 @@ func PostStrategy() gin.HandlerFunc {
 
 func GetPortfolio() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		// TODO: implement
-		ctx.Status(http.StatusNotImplemented)
+		authUserId := DistillAuthUserId(ctx)
+
+		portfolioId, err := strconv.Atoi(ctx.Query("id"))
+		if err != nil {
+			// TODO: error
+		}
+
+		portfolio, err := FindPortfolioById(uint(portfolioId))
+		if err != nil {
+			// TODO: error
+		}
+
+		if authUserId != uint(portfolio.UserID) {
+			// TODO: error
+		}
+
+		buildStandardResponse(
+			ctx,
+			gin.H{
+				"Portfolio": portfolio,
+			},
+		)
 	}
 }
 

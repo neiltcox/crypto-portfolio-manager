@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/neiltcox/coinbake/database"
 	"gorm.io/gorm"
 )
@@ -24,4 +26,14 @@ func FindPortfoliosByUserId(userId uint) []Portfolio {
 	portfolios := []Portfolio{}
 	database.Handle().Where("user_id = ?", userId).Find(&portfolios)
 	return portfolios
+}
+
+func FindPortfolioById(portfolioId uint) (*Portfolio, error) {
+	portfolio := &Portfolio{}
+	result := database.Handle().First(portfolio, portfolioId)
+	if result.Error != nil {
+		return nil, fmt.Errorf("could not find portfolio: %s", result.Error)
+	}
+
+	return portfolio, nil
 }
