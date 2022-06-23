@@ -1,3 +1,5 @@
+github.com/beldur/kraken-go-api-client v0.0.0-20210512194559-2c29669c4ecc h1:nYdDKeiMVAH4DnBv6PDoOZtxUcCFj5jRL6M4anypjTE=
+github.com/beldur/kraken-go-api-client v0.0.0-20210512194559-2c29669c4ecc/go.mod h1:NtR1i+x0BHgyscUkgG1FlAokpIxNDKgLO3301OLxWt0=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

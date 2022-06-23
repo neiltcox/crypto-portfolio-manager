@@ -2,6 +2,9 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/neiltcox/coinbake/config"
 	"github.com/neiltcox/coinbake/database"
@@ -21,9 +24,24 @@ func main() {
 
 	service.InitModels()
 
-	sandbox(config)
+	// Start recurring tasks
+	service.StartRecurringTasks()
 
+	// Run sandbox
+	// sandbox(config)
+
+	// Serve the service.
 	service.Serve()
+
+	// Register shutdown signal notification.
+	exit := make(chan os.Signal, 1)
+	signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
+
+	// Wait for exit.
+	<-exit
+
+	// Stop recurring tasks.
+	service.StopRecurringTasks()
 
 	log.Println("Fully stopped.")
 }

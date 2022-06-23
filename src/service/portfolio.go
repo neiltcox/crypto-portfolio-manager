@@ -2,6 +2,8 @@ package service
 
 import (
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/neiltcox/coinbake/database"
 	"gorm.io/gorm"
@@ -19,8 +21,16 @@ type Portfolio struct {
 	User               User
 	Name               string
 	Connected          bool
-	Valuation          float64
+	TotalValuation     float64
+	LastRefresh        time.Time
 }
+
+// TODO: add pay-tiers to refresh interval.
+// How often to refresh the portfolio.
+const PortfolioRefreshInterval time.Duration = 8 * time.Hour
+
+// How many portfolios to refresh per batch.
+const PortfolioRefreshBatchCount int = 3
 
 func FindPortfoliosByUserId(userId uint) []Portfolio {
 	portfolios := []Portfolio{}
@@ -36,4 +46,48 @@ func FindPortfolioById(portfolioId uint) (*Portfolio, error) {
 	}
 
 	return portfolio, nil
+}
+
+func refreshStalePortfolios() {
+	stalePortfolios := []Portfolio{}
+	database.Handle().Where("last_refresh <= ?", time.Time.Add(time.Now(), -PortfolioRefreshInterval)).Limit(PortfolioRefreshBatchCount).Find(&stalePortfolios)
+
+	if len(stalePortfolios) > 0 {
+		log.Printf("Refreshing %d portfolios", len(stalePortfolios))
+	}
+
+	for _, stalePortfolio := range stalePortfolios {
+		stalePortfolio.Refresh()
+	}
+}
+
+// Refreshes valuation information for the portfolio.
+func (portfolio *Portfolio) Refresh() error {
+	exchange, err := portfolio.Exchange()
+	if err != nil {
+		return err
+	}
+
+	holdingSummary, err := exchange.HoldingSummary(portfolio)
+	if err != nil {
+		return err
+	}
+
+	portfolio.TotalValuation = holdingSummary.TotalBalanceValuation
+	portfolio.LastRefresh = time.Now()
+
+	database.Handle().Save(portfolio)
+
+	return nil
+}
+
+func PortfolioRefresher(ticks *time.Ticker, stop chan bool) {
+	for {
+		select {
+		case <-stop:
+			return
+		case <-ticks.C:
+			refreshStalePortfolios()
+		}
+	}
 }

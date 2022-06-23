@@ -76,6 +76,40 @@ func GetUser() gin.HandlerFunc {
 	}
 }
 
+func GetExchangeConnectionValid() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		authUserId := DistillAuthUserId(ctx)
+
+		portfolioId, err := strconv.Atoi(ctx.Query("portfolio_id"))
+		if err != nil {
+			// TODO: error
+		}
+
+		portfolio, err := FindPortfolioById(uint(portfolioId))
+		if err != nil {
+			// TODO: error
+		}
+
+		if authUserId != uint(portfolio.UserID) {
+			// TODO: error
+		}
+
+		exchange, err := portfolio.Exchange()
+		if err != nil {
+			// TODO: error
+		}
+
+		testExchangeConnectionResult := exchange.ValidateConnection(portfolio)
+
+		buildStandardResponse(
+			ctx,
+			gin.H{
+				"TestExchangeConnectionResult": testExchangeConnectionResult,
+			},
+		)
+	}
+}
+
 func buildStandardResponse(ctx *gin.Context, data interface{}) {
 	ctx.JSON(http.StatusOK, data)
 }
