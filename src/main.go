@@ -25,13 +25,13 @@ func main() {
 	service.InitModels()
 
 	// Start recurring tasks
-	service.StartRecurringTasks()
+	go service.StartRecurringTasks()
 
 	// Run sandbox
 	// sandbox(config)
 
 	// Serve the service.
-	service.Serve()
+	go service.Serve()
 
 	// Register shutdown signal notification.
 	exit := make(chan os.Signal, 1)

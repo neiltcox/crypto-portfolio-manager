@@ -25,6 +25,7 @@ func Serve() {
 	apiV1.POST("/portfolio", PostPortfolio())
 	apiV1.GET("/user", GetUser())
 	apiV1.GET("/exchange_connection_valid", GetExchangeConnectionValid())
+	apiV1.GET("/exchange_supported_assets", GetExchangeSupportedAssets())
 
 	http.ListenAndServe(":5010", router)
 }

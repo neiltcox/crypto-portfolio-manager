@@ -76,6 +76,34 @@ func GetUser() gin.HandlerFunc {
 	}
 }
 
+func GetExchangeSupportedAssets() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		portfolioId, err := strconv.Atoi(ctx.Query("portfolio_id"))
+		if err != nil {
+			// TODO: error
+		}
+
+		portfolio, err := FindPortfolioById(uint(portfolioId))
+		if err != nil {
+			// TODO: error
+		}
+
+		exchange, err := portfolio.Exchange()
+		if err != nil {
+			// TODO: error
+		}
+
+		supportedAssets, err := exchange.SupportedAssets(portfolio)
+		if err != nil {
+			// TODO: error
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"ExchangeSupportedAssets": supportedAssets,
+		})
+	}
+}
+
 func GetExchangeConnectionValid() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authUserId := DistillAuthUserId(ctx)

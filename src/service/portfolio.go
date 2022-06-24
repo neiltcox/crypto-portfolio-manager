@@ -65,20 +65,27 @@ func refreshStalePortfolios() {
 func (portfolio *Portfolio) Refresh() error {
 	exchange, err := portfolio.Exchange()
 	if err != nil {
+		portfolio.MarkDisconnected()
 		return err
 	}
 
 	holdingSummary, err := exchange.HoldingSummary(portfolio)
 	if err != nil {
+		portfolio.MarkDisconnected()
 		return err
 	}
 
 	portfolio.TotalValuation = holdingSummary.TotalBalanceValuation
+	portfolio.Connected = true
 	portfolio.LastRefresh = time.Now()
 
 	database.Handle().Save(portfolio)
 
 	return nil
+}
+
+func (portfolio *Portfolio) MarkDisconnected() {
+	database.Handle().Model(&portfolio).Update("connected", false)
 }
 
 func PortfolioRefresher(ticks *time.Ticker, stop chan bool) {

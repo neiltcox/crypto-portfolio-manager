@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 
 	krakenapi "github.com/beldur/kraken-go-api-client"
@@ -27,7 +26,7 @@ func (exchangeKraken *ExchangeKraken) SupportsAsset(exchangeConnection *Portfoli
 
 func (exchangeKraken *ExchangeKraken) ValidateConnection(portfolio *Portfolio) ValidateExchangeConnectionResult {
 	api := krakenapi.New(portfolio.ApiKey, portfolio.ApiSecret)
-	tradeBalanceRaw, err := api.Query("TradeBalance", map[string]string{
+	_, err := api.Query("TradeBalance", map[string]string{
 		"asset": "USD",
 	})
 
@@ -38,16 +37,27 @@ func (exchangeKraken *ExchangeKraken) ValidateConnection(portfolio *Portfolio) V
 		}
 	}
 
-	log.Printf("%#v", tradeBalanceRaw)
-
 	return ValidateExchangeConnectionResult{
 		Success: true,
 		Issue:   "",
 	}
 }
 
-func (exchangeKraken *ExchangeKraken) SupportedAssets(exchangeConnection *Portfolio) (map[string]bool, error) {
-	// TODO: implement
+func (exchangeKraken *ExchangeKraken) SupportedAssets(portfolio *Portfolio) (map[string]bool, error) {
+	api := krakenapi.New(portfolio.ApiKey, portfolio.ApiSecret)
+	_, err := api.Query("Assets", map[string]string{})
+	if err != nil {
+		return make(map[string]bool, 0), err
+	}
+
+	/*
+		assetsResponse := assetsResponseRaw.([]map[string]interface{})
+		supportedAssets := make(map[string]bool, 0)
+
+		for _, asset := range assetsResponse {
+			//supportedAssets[asset["symbol"]]
+		}*/
+
 	return map[string]bool{}, nil
 }
 

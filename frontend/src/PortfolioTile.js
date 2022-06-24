@@ -17,7 +17,7 @@ export default function PortfolioTile(props) {
 						<StyledText styling='standard'>{exchangeName[props.portfolio.ExchangeIdentifier]}</StyledText>
 						<ConnectionStatus sentiment={props.portfolio.Connected ? 'positive' : 'negative'} />
 					</InlineLayout>
-					<StyledText><CurrencyFormat value={props.portfolio.Valuation} displayType='text' prefix='$' thousandSeparator={true}/></StyledText>
+					<StyledText><CurrencyFormat value={props.portfolio.TotalValuation} displayType='text' prefix='$' thousandSeparator={true}/></StyledText>
 				</Stack>
 			</ContentBox>
 		</div>
